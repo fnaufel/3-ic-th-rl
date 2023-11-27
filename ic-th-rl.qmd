@@ -1,0 +1,185 @@
+---
+title: 'Intervalos de confiança, testes de hipótese, regressão linear'
+subtitle: 'Lista avaliativa final -- Probabilidade e Estatística'
+author: "Fernando Náufel"
+date: now
+date-format: "DD/MM/YYYY HH:mm"
+lang: pt
+
+# bibliography: bibliography.bib
+# csl: universidade-do-porto-faculdade-de-engenharia-chicago-pt-crono.csl
+
+format:
+  html:
+    toc: true  
+    toc-depth: 3
+    number-depth: 3
+    theme: 
+      - journal
+      - _custom.scss
+    link-external-icon: true
+    link-external-newwindow: true
+    link-external-filter: ^(?:http:|https:)\/\/fnaufel\.github\.io
+    df-print: paged
+    code-link: true
+    code-copy: true
+    code-tools: true
+---
+
+{{< include _math.qmd >}}
+
+
+```{r setup, echo=FALSE, message=FALSE}
+source('_setup.R')
+```
+
+
+# Mentindo a idade
+
+Uma pesquisa perguntou a $799$ adolescentes se eles mentiam a idade para entrar em sites da internet. Das respostas, $49\%$ foram que sim.
+
+1. Qual o [erro-padrão]{.hl} de $\hat p$?
+
+1. [O que significa]{.hl} este erro-padrão?
+
+1. Construa [intervalos de confiança para $p$]{.hl} com $90\%$, $95\%$ e $99\%$ de confiança.
+
+1. Qual dos $3$ intervalos de confiança do item anterior tem [a maior margem de erro]{.hl}? Por quê?
+
+1. Faça um [teste de hipóteses]{.hl} para verificar se $p$ é [diferente]{.hl} de $0{,}5$ com $\alpha = 0{,}1$; $\alpha = 0{,}05$; e $\alpha = 0{,}01$.
+
+
+# Casamento
+
+Em $1960$, a idade média dos homens no momento do primeiro casamento era de $23{,}3$ anos.
+
+Em uma amostra de $40$ homens que se casaram pela primeira vez no ano passado, as idades eram:
+
+```{r}
+idades <- c(
+  24.4, 27.6, 34.0, 20.8, 23.7, 34.3, 14.3, 23.9, 23.6, 21.5, 26.4, 
+  10.6, 27.9, 19.3, 17.9, 21.9, 20.3, 25.8, 28.3, 22.5, 33.1, 21.5, 
+  23.0, 24.0, 20.5, 28.5, 24.0, 25.0, 28.5, 19.8, 22.5, 29.2, 21.2, 
+  19.2, 22.7, 27.4, 33, 25, 26.4, 23.1
+)
+```
+
+Os homens estão se casando [mais velhos]{.hl}?
+
+Responda com $\alpha = 0{,}1$; com $\alpha = 0{,}05$; e com $\alpha = 0{,}01$?
+
+
+# Pulsação
+
+Um pesquisador examinou as pulsações de homens e mulheres (em bpm):
+
+```{r}
+homens <- c(
+  78, 72, 74, 70, 77, 75, 76, 71, 73, 75, 73, 70, 70, 79, 
+  76, 73, 70, 77, 75, 77, 70, 76, 76, 73, 73, 75, 78, 70
+)
+
+mulheres <- c(
+  78, 72, 75, 67, 75, 73, 76, 73, 67, 77, 72, 72, 68, 73, 
+  68, 83, 76, 74, 70, 72, 67, 67, 73, 75, 76, 77, 70, 71
+)
+```
+
+1. Construa [*boxplots*]{.hl} para os dados (separados por sexo).
+
+1. O que você nota de estranho?
+
+1. Calcule as [médias]{.hl} e os [desvios-padrão]{.hl} dos grupos.
+
+1. Construa [intervalos de confiança]{.hl} para a diferença entre as pulsações médias dos homens e das mulheres, considerando que [as variâncias dos grupos são diferentes]{.hl}, com $90\%$, $95\%$ e $99\%$ de confiança.
+
+1. Refaça o item acima, considerando que [as variâncias dos grupos são iguais]{.hl}. Houve muita mudança?
+
+
+# Sexta-feira 13
+
+Sextas-feiras $13$ são mais perigosas?
+
+Em uma cidade, pesquisadores contaram as quantidades de pacientes admitidos nas emergências de hospitais por causa de acidentes de trânsito.
+
+As contagens foram feitas em diversas sextas-feiras $13$ e nas respectivas sextas-feiras $6$ anteriores, como mostra a tabela:
+
+```{r echo=FALSE}
+df <- 
+tribble(
+  ~ano, ~mês,         ~"6",   ~"13",
+  1989, 'outubro',    9,      13,
+  1990, 'julho',      6,      12,
+  1991, 'setembro',   11,     14,
+  1991, 'dezembro',   11,     10,
+  1992, 'março',      3,      4,
+  1992, 'novembro',   5,      12
+)
+
+df
+```
+
+```{r echo=FALSE}
+df <- df %>% 
+  pivot_longer(
+    `6`:`13`,
+    names_to = 'dia',
+    names_transform = list(dia = as.double),
+    values_to = 'pacientes',
+  )
+```
+
+Para sua conveniência, já transformei o *data frame* para o formato longo:
+
+```{r}
+df
+```
+
+1. Construa [*boxplots*]{.hl}, separados por dia ($6$ ou $13$) das quantidades de pacientes. Qual é a sua impressão?
+
+1. Faça o seguinte [teste de hipóteses]{.hl}, [considerando iguais as variâncias]{.hl} dos dois grupos, com $\alpha = 0{,}05$:
+
+   a. $H_0:$ a diferença entre a média de pacientes no dia $6$ e a média de pacientes no dia $13$ é [igual a zero]{.hl}.
+
+   a. $H_A:$ a diferença entre a média de pacientes no dia $6$ e a média de pacientes no dia $13$ é [menor que zero]{.hl} (i.e., a média no dia $6$ é menor).
+  
+1. Agora, faça o seguinte [teste de hipóteses]{.hl}, [considerando iguais as variâncias]{.hl} dos dois grupos, com $\alpha = 0{,}05$:
+
+   a. $H_0:$ em cada par de sexta-feira $6$ e sexta-feira $13$ subsequente, a diferença entre as quantidades de pacientes é [igual a zero]{.hl}, em média.
+
+   a. $H_A:$ em cada par de sexta-feira $6$ e sexta-feira $13$ subsequente, a diferença entre as quantidades de pacientes é [menor que zero]{.hl}, em média (i.e., a quantidade no dia $6$ é menor, em média).
+  
+1. Qual dos dois testes você acha mais apropriado usar para responder a pergunta "[Sextas-feiras $13$ são mais perigosas?]{.hl}"? Por quê?
+
+
+# Vendas
+
+O *dataframe* abaixo mostra a relação entre a quantidade de vendedores em uma loja e a receita das vendas (em R\$ $1.000$):
+
+```{r echo=FALSE}
+df <- tibble(
+  vendedores = c(2, 3, 7, 9, 10, 10, 12, 15, 16, 20),
+  vendas = c(10, 11, 13, 14, 18, 20, 20, 22, 22, 26)
+)
+
+df
+```
+
+1. Faça um [*scatter plot*]{.hl}.
+
+1. Qual é a [correlação]{.hl} entre estas variáveis?
+
+1. O gerente quer estudar [como as vendas variam em função da quantidade de vendedores]{.hl}. Ache a [equação]{.hl} da reta de melhor ajuste usando regressão linear.
+
+1. O que significa o [termo constante]{.hl} desta equação?
+
+1. O que significa o [coeficiente da variável]{.hl} nesta equação?
+
+1. Faça um [histograma]{.hl} de todos os resíduos. [Comente o gráfico]{.hl}.
+
+1. Faça um [*scatter plot*]{.hl} de todos os resíduos por valor previsto. [Comente o gráfico]{.hl}.
+
+1. Se houver $18$ vendedores, qual a [receita prevista]{.hl}?
+
+1. Se, com $18$ vendedores, houver uma receita de R\$ $25.000$, qual o [resíduo]{.hl}?
+
