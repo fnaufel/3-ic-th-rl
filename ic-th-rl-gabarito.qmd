@@ -19,7 +19,7 @@ format:
       - _custom.scss
     link-external-icon: true
     link-external-newwindow: true
-    link-external-filter: ^(?:http:|https:)\/\/fnaufel\.github\.io
+    link-external-filter: ^(?:http:|https:)\/\/fnaufel\.github\.io/
     df-print: paged
     code-link: true
     code-copy: true
@@ -41,13 +41,218 @@ Uma pesquisa perguntou a $799$ adolescentes se eles mentiam a idade para entrar 
 
 1. Qual o [erro-padrão]{.hl} de $\hat p$?
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Do [livro eletrônico](https://fnaufel.github.io/probestr/ic.html#intervalos-de-confian%C3%A7a-para-a-propor%C3%A7%C3%A3o),
+   
+   $$
+   EP = \sqrt{\frac{\hat p(1-\hat p)}{n}}
+   $$
+   
+   onde $\hat p = 0{,}49$ e $n = 799$:
+   
+   ```{r}
+   n = 799
+   p_chapeu <- 0.49
+   
+   ep <- sqrt(p_chapeu * (1 - p_chapeu) / n)
+   ep
+   ```
+   
+   :::
+
 1. [O que significa]{.hl} este erro-padrão?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Existem muitas amostras possíveis de $799$ pessoas da população.
+   
+   Cada amostra dá um valor de $\hat p$. 
+   
+   Escolher uma amostra é um experimento probabilístico; então, [$\hat p$ é uma variável aleatória]{.hl}, cujo valor depende da amostra tomada.
+   
+   Toda variável aleatória tem uma distribuição.
+   
+   A distribuição de $\hat p$ é chamada de [distribuição amostral de $\hat p$]{.hl}:
+   
+   ```{r echo=FALSE}
+   grafico <- 
+     ggplot() +
+       stat_function(
+         fun = dnorm,
+         xlim = c(-4, 4)
+       ) +
+       geom_segment(
+         aes(
+           x = -1,
+           xend = 1,
+           y = .1,
+           yend = .1
+         ),
+         color = 'red',
+         linewidth = 1
+       ) +
+       geom_label(
+         aes(x = 0, y = .1, label = 'EP'),
+         color = 'red'
+       ) +
+       scale_y_continuous(breaks = NULL) +
+       scale_x_continuous(
+         breaks = 0,
+         labels = c(
+           TeX('$\\mu = p = ?$')
+         )
+       ) +
+       labs(
+         title = TeX('Distribuição amostral de $\\hat{p}$'),
+         y = NULL,
+         x = NULL
+       )
+   
+   grafico
+   ```
+   
+   A distribuição amostral de $\hat p$ é [normal]{.hl}.
+   
+   A [média]{.hl} da distribuição amostral de $\hat p$ é $p$, o valor (desconhecido) da proporção populacional.
+
+   O [desvio-padrão]{.hl} da distribuição amostral de $\hat p$ é chamado de [erro-padrão]{.hl} (EP), cujo valor foi calculado no item anterior.
+
+   :::
 
 1. Construa [intervalos de confiança para $p$]{.hl} com $90\%$, $95\%$ e $99\%$ de confiança.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+
+   Usando o pacote `binom` do R:^[O método assintótico foi o que usamos nos cálculos teóricos no curso.]
+   
+   ```{r}
+   library(binom)
+   
+   sucessos <- n * p_chapeu
+   niveis = c(.9, .95, .99)
+   
+   intervalos <- niveis %>% 
+     map(
+       ~binom.confint(sucessos, n, conf.level = .x, methods = 'asymptotic')
+     ) %>% 
+     bind_rows() %>% 
+     mutate(confiança = niveis) %>% 
+     select(
+       confiança,
+       inf = lower,
+       sup = upper
+     )
+   
+   intervalos
+   ```
+
+   Fazendo todos os cálculos:
+      
+   ```{r}
+   valores_criticos <- c(
+     '90' = -qnorm(.05),
+     '95' = -qnorm(.025),
+     '99' = -qnorm(.005)
+   )
+   
+   valores_criticos
+   ```
+   
+   ```{r}
+   margens <- valores_criticos * ep
+   margens
+   ```
+
+   ```{r}
+   intervalos <- list(
+     inf = p_chapeu - margens, 
+     sup = p_chapeu + margens
+   ) %>% 
+     as_tibble() %>% 
+     mutate(confiança = niveis, .before = inf)
+   intervalos
+   ```
+
+   :::
+
 1. Qual dos $3$ intervalos de confiança do item anterior tem [a maior margem de erro]{.hl}? Por quê?
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+
+   O de nível de confiança de $99\%$.
+   
+   Para que nosso intervalo tenha apenas $1\%$ de probabilidade de não conter o valor verdadeiro de $p$ (a proporção populacional), a largura do intervalo precisa ser maior.
+   
+   Veja uma [explicação detalhada no livro eletrônico](https://fnaufel.github.io/probestr/ic.html#o-que-quer-dizer-95-de-confian%C3%A7a).
+
+   :::
+
 1. Faça um [teste de hipóteses]{.hl} para verificar se $p$ é [diferente]{.hl} de $0{,}5$ com $\alpha = 0{,}1$; $\alpha = 0{,}05$; e $\alpha = 0{,}01$.
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Hipóteses:
+   
+   $$
+   \begin{aligned}
+     H_0 : p = 0{,}5 \\
+     H_A : p \neq 0{,}5
+   \end{aligned}
+   $$
+
+   Usando o R, vemos que [a função `prop.test` só usa o nível de confiança para construir o IC]{.hl}.
+   
+   Nos três testes abaixo, só o IC muda. 
+   
+   Como era de se esperar, [o valor p é o mesmo, independente do valor de $\alpha$]{.hl}.
+   
+   ```{r}
+   testes <- niveis %>% 
+    map(
+      ~prop.test(
+        sucessos, 
+        n, 
+        p = .5,
+        alternative = 'greater',  
+        conf.level = .x, 
+        correct = FALSE
+      )
+    )
+   testes
+   ```
+
+   [O valor de $\alpha$ só é usado depois que descobrimos o valor p.]{.hl} 
+   
+   Se o valor p for menor que $\alpha$, rejeitamos a hipótese de nulidade; senão, não:
+   
+   ```{r}
+   alfa <- function(conf) { 1 - conf }
+   
+   testes %>% 
+     walk2(
+       niveis,
+       ~cat(
+         'α = ', alfa(.y), '\t: ', 
+         ifelse(
+           .x$p.value < alfa(.y), 
+           '',  
+           'não'
+         ),
+         'rejeitar H0.\n'
+       )
+     )
+   ```
+
+   Veja, nos resultados dos testes, que o valor p foi $`r testes[[1]]$p.value`$, maior do que os três valores de $\alpha$. 
+   
+   Logo, [nenhum dos três testes rejeitou a hipótese de nulidade]{.hl} (de que a proporção populacional é $0{,}5$).
+   
+   Fazendo todos os cálculos:
+   
+   ???
+   
+   :::
 
 
 # Casamento
