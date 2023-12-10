@@ -248,10 +248,6 @@ Uma pesquisa perguntou a $799$ adolescentes se eles mentiam a idade para entrar 
    
    Logo, [nenhum dos três testes rejeitou a hipótese de nulidade]{.hl} (de que a proporção populacional é $0{,}5$).
    
-   Fazendo todos os cálculos:
-   
-   ???
-   
    :::
 
 
@@ -274,6 +270,55 @@ Os homens estão se casando [mais velhos]{.hl}?
 
 Responda com $\alpha = 0{,}1$; com $\alpha = 0{,}05$; e com $\alpha = 0{,}01$?
 
+::: {.callout-note collapse="true" title="Resposta"}
+
+Vamos fazer um teste de hipóteses:
+
+$$
+\begin{aligned}
+  H_0 : \mu = 23{,}3 \\ 
+  H_A : \mu > 23{,}3 
+\end{aligned}
+$$
+
+$n = 40$ é um tamanho razoável de amostra. Com este tamanho, não precisamos nos preocupar com a normalidade dos dados, mas um histograma e um teste de Shapiro mostram que eles são aproximadamente normais:
+
+```{r}
+b <- seq(10, 35, 5)
+
+idades %>% 
+  enframe(name = NULL, value = 'idade') %>% 
+  ggplot(aes(idade)) +
+    geom_histogram(breaks = b) +
+    labs(y = NULL)
+```
+
+```{r}
+shapiro.test(idades)
+```
+
+Vamos supor que as outras condições do TCL são satisfeitas.
+
+Como não sabemos o desvio-padrão populacional $\sigma$, vamos fazer um teste $t$:
+
+```{r}
+teste <- t.test(
+  idades,
+  alternative = 'greater',
+  mu = 23.3
+)
+
+teste
+```
+
+Como vimos antes, o valor de $\alpha$ não afeta o valor p.
+
+O valor p foi $`r teste$p.value`$, que é maior do que os três valores de $\alpha$.
+
+Conclusão: nos três casos, [não podemos rejeitar $H_0$]{.hl}. Com base nesta amostra, [os homens não estão se casando mais velhos]{.hl}.
+
+:::
+
 
 # Pulsação
 
@@ -293,13 +338,137 @@ mulheres <- c(
 
 1. Construa [*boxplots*]{.hl} para os dados (separados por sexo).
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   df <- tibble(
+     sexo = rep(c('M', 'F'), c(length(homens), length(mulheres))),
+     bpm  = c(homens, mulheres)
+   )
+   
+   df
+   ```
+   
+   ```{r}
+   df %>% 
+     ggplot(aes(sexo, bpm)) +
+       geom_boxplot()
+   ```
+   :::
+
 1. O que você nota de estranho?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   O espalhamento dos homens é menor do que o das mulheres.
+   
+   :::
 
 1. Calcule as [médias]{.hl} e os [desvios-padrão]{.hl} dos grupos.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   df %>% 
+     group_by(sexo) %>% 
+     summarize(
+       media = mean(bpm),
+       dp = sd(bpm)
+     )
+   ```
+   
+   O desvio-padrão dos homens é uma unidade menor que o das mulheres.
+   
+   :::
+
 1. Construa [intervalos de confiança]{.hl} para a diferença entre as pulsações médias dos homens e das mulheres, considerando que [as variâncias dos grupos são diferentes]{.hl}, com $90\%$, $95\%$ e $99\%$ de confiança.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   niveis = c(.9, .95, .99)
+   
+   intervalos_var_dif <- niveis %>% 
+     map(
+       ~ t.test(
+         homens,
+         mulheres,
+         conf.level = .x
+       ) %>% tidy()
+     ) %>% 
+     bind_rows() %>% 
+     mutate(confiança = niveis) %>% 
+     select(
+       confiança,
+       inf = conf.low,
+       sup = conf.high
+     )
+   
+   intervalos_var_dif
+   ```
+   
+   :::
+
 1. Refaça o item acima, considerando que [as variâncias dos grupos são iguais]{.hl}. Houve muita mudança?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   niveis = c(.9, .95, .99)
+   
+   intervalos_var_igual <- niveis %>% 
+     map(
+       ~ t.test(
+         homens,
+         mulheres,
+         conf.level = .x,
+         var.equal = TRUE
+       ) %>% tidy()
+     ) %>% 
+     bind_rows() %>% 
+     mutate(confiança = niveis) %>% 
+     select(
+       confiança,
+       inf = conf.low,
+       sup = conf.high
+     )
+   
+   intervalos_var_igual
+   ```
+   
+   Parece que as mudanças foram pequenas.
+   
+   Conferindo:
+   
+   Os centros dos intervalos não mudaram:
+   
+   ```{r}
+   tibble(
+     confiança = niveis,
+     centro_var_dif = 
+       (intervalos_var_dif$inf + intervalos_var_dif$sup) / 2,
+     centro_var_igual = 
+       (intervalos_var_igual$inf + intervalos_var_igual$sup) / 2
+   )
+   ```
+   
+   Quanto às larguras dos intervalos:
+
+   ```{r}
+   tibble(
+     confiança = niveis,
+     largura_var_dif = 
+       intervalos_var_dif$sup - intervalos_var_dif$inf,
+     largura_var_igual = 
+       intervalos_var_igual$sup - intervalos_var_igual$inf,
+     redução = ((largura_var_dif - largura_var_igual) / largura_var_dif) %>% 
+       round(3)
+   )
+   ```
+   
+   Considerar as variâncias iguais diminuiu a largura dos intervalos em menos de $0{,}5\%$.
+   
+   :::
 
 
 # Sexta-feira 13
