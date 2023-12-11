@@ -140,7 +140,7 @@ conflict_prefer("view", "tibble")
 conflict_prefer("filter", "dplyr")
 
 # Text size in plots
-plot_text_size = ifelse(is_html_output(), 12, 13)
+plot_text_size = ifelse(is_html_output(), 11, 13)
 
 # Sober theme for ggplot
 theme_set(

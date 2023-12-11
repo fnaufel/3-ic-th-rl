@@ -438,9 +438,7 @@ mulheres <- c(
    
    Parece que as mudanças foram pequenas.
    
-   Conferindo:
-   
-   Os centros dos intervalos não mudaram:
+   Os [centros]{.hl} dos intervalos não mudaram:
    
    ```{r}
    tibble(
@@ -452,7 +450,7 @@ mulheres <- c(
    )
    ```
    
-   Quanto às larguras dos intervalos:
+   Quanto às [larguras]{.hl} dos intervalos:
 
    ```{r}
    tibble(
@@ -461,7 +459,7 @@ mulheres <- c(
        intervalos_var_dif$sup - intervalos_var_dif$inf,
      largura_var_igual = 
        intervalos_var_igual$sup - intervalos_var_igual$inf,
-     redução = ((largura_var_dif - largura_var_igual) / largura_var_dif) %>% 
+     redução_relativa = ((largura_var_dif - largura_var_igual) / largura_var_dif) %>% 
        round(3)
    )
    ```
@@ -512,19 +510,133 @@ df
 
 1. Construa [*boxplots*]{.hl}, separados por dia ($6$ ou $13$) das quantidades de pacientes. Qual é a sua impressão?
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   df %>% 
+     ggplot(aes(factor(dia), pacientes)) +
+       geom_boxplot() +
+       scale_y_continuous(
+         breaks = 0:max(df$pacientes),
+         limits = c(0, NA)
+       ) +
+       labs(x = 'dia')
+   ```
+   
+   De fato, parece ter havido mais vítimas nas sextas-feiras 13.
+   
+   :::
+
 1. Faça o seguinte [teste de hipóteses]{.hl}, [considerando iguais as variâncias]{.hl} dos dois grupos, com $\alpha = 0{,}05$:
 
    a. $H_0:$ a diferença entre a média de pacientes no dia $6$ e a média de pacientes no dia $13$ é [igual a zero]{.hl}.
 
    a. $H_A:$ a diferença entre a média de pacientes no dia $6$ e a média de pacientes no dia $13$ é [menor que zero]{.hl} (i.e., a média no dia $6$ é menor).
+   
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Este é um teste com duas amostras [não-pareadas]{.hl}.
+   
+   ```{r}
+   t.test(
+     df %>% filter(dia == 6)  %>% pull(pacientes),
+     df %>% filter(dia == 13) %>% pull(pacientes),
+     var.equal = TRUE,
+     alternative = 'less'
+   )
+   ```
+   Com $\alpha = 0{,}5$ e o valor p acima, não podemos rejeitar a hipótese de nulidade. [A diferença entre as médias não é significativa]{.hl}.
+   
+   :::
   
 1. Agora, faça o seguinte [teste de hipóteses]{.hl}, [considerando iguais as variâncias]{.hl} dos dois grupos, com $\alpha = 0{,}05$:
 
    a. $H_0:$ em cada par de sexta-feira $6$ e sexta-feira $13$ subsequente, a diferença entre as quantidades de pacientes é [igual a zero]{.hl}, em média.
 
    a. $H_A:$ em cada par de sexta-feira $6$ e sexta-feira $13$ subsequente, a diferença entre as quantidades de pacientes é [menor que zero]{.hl}, em média (i.e., a quantidade no dia $6$ é menor, em média).
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Este é um teste com duas amostras [pareadas]{.hl}.
+   
+   ```{r}
+   t.test(
+     df %>% filter(dia == 6)  %>% pull(pacientes),
+     df %>% filter(dia == 13) %>% pull(pacientes),
+     var.equal = TRUE,
+     alternative = 'less',
+     paired = TRUE
+   )
+   ```
+   Com $\alpha = 0{,}5$ e o valor p acima, rejeitamos a hipótese de nulidade. [A diferença média entre as quantidades de pacientes é significativa]{.hl}.
+   
+   :::
   
 1. Qual dos dois testes você acha mais apropriado usar para responder a pergunta "[Sextas-feiras $13$ são mais perigosas?]{.hl}"? Por quê?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   O [primeiro]{.hl} teste compara [todas]{.hl} as sextas-feiras 13 (em conjunto) com [todas]{.hl} as sextas-feiras 6 (em conjunto).
+   
+   O [segundo]{.hl} teste compara [cada]{.hl} sexta-feira 13 com [cada]{.hl} sexta-feira 6 imediatamente anterior.
+   
+   Se você acha que existe ligação entre duas sextas-feiras consecutivas (por exemplo, as duas estão em um mês onde houve mais acidentes), o segundo teste é mais indicado.
+   
+   De fato, o seguinte gráfico mostra a correlação entre cada sexta-feira 13 e a sexta-feira imediatamente anterior:
+   
+   ```{r}
+   num_mes <- function(x) {
+     
+     nomes = c(
+       'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+       'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+     )
+     
+     num_meses <- sprintf('%02d', 1:12)
+     names(num_meses) <- nomes
+     
+     num_meses[x]
+     
+   }
+   
+   df2 <- df %>% 
+     mutate(
+       mês = paste0(ano, '-', num_mes(mês))
+     ) %>% 
+     arrange(mês)
+   
+   ggplot() +
+     geom_line(
+       data = df2 %>% filter(dia == 6),
+       mapping = aes(mês, pacientes, color = '06', group = 6)
+     ) +
+     geom_point(
+       data = df2 %>% filter(dia == 6),
+       mapping = aes(mês, pacientes, color = '06', group = 6)
+     ) +
+     geom_line(
+       data = df2 %>% filter(dia == 13),
+       mapping = aes(mês, pacientes, color = '13', group = 13),
+     ) +
+     geom_point(
+       data = df2 %>% filter(dia == 13),
+       mapping = aes(mês, pacientes, color = '13', group = 13),
+     ) +
+     scale_y_continuous(breaks = 0:max(df$pacientes), limits = c(0, NA)) +
+     labs(color = 'dia')
+     
+   ```
+   
+   O coeficiente de correlação entre cada sexta-feira 13 e a sexta-feira imediatamente anterior é
+   
+   ```{r}
+   cor(
+     df %>% filter(dia == 6)  %>% pull(pacientes),
+     df %>% filter(dia == 13) %>% pull(pacientes)
+   )
+   ```
+   
+   :::
 
 
 # Vendas
@@ -542,19 +654,145 @@ df
 
 1. Faça um [*scatter plot*]{.hl}.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   grafico <- df %>% 
+     ggplot(aes(vendedores, vendas)) +
+       geom_point()
+       
+   grafico
+   ```
+   
+   :::
+
 1. Qual é a [correlação]{.hl} entre estas variáveis?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   cor(df$vendedores, df$vendas)
+   ```
+   
+   :::
 
 1. O gerente quer estudar [como as vendas variam em função da quantidade de vendedores]{.hl}. Ache a [equação]{.hl} da reta de melhor ajuste usando regressão linear.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   modelo <- lm(vendas ~ vendedores, df)
+   summary(modelo)
+   ```
+   
+   ```{r}
+   intercepto <- coef(modelo)[1]
+   coef_vendedores <- coef(modelo)[2]
+   ```
+   
+   A equação é
+   
+   $$
+   \widehat{\text{vendas}} 
+   = `r intercepto` + `r coef_vendedores` \cdot \text{vendedores}
+   $$
+   Graficamente:
+   
+   ```{r}
+   grafico +
+     geom_abline(
+       slope = coef_vendedores, 
+       intercept = intercepto,
+       color = 'blue'
+     )
+   ```
+   
+   :::
+
+
 1. O que significa o [termo constante]{.hl} desta equação?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   O termo constante é o chamado [intercepto]{.hl}.
+   
+   Teoricamente, é a receita das vendas se a quantidade de vendedores fosse zero.
+   
+   Como o nome diz, é o valor em que a reta corta o eixo $y$.
+   
+   :::
 
 1. O que significa o [coeficiente da variável]{.hl} nesta equação?
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   Significa o aumento nas vendas para cada vendedor adicional.
+   
+   :::
+
 1. Faça um [histograma]{.hl} de todos os resíduos. [Comente o gráfico]{.hl}.
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+
+   ```{r}
+   modelo_augment <- augment(modelo)
+   
+   modelo_augment %>% 
+     ggplot(aes(.resid)) +
+       geom_histogram(breaks = -3:3) +
+       labs(x = 'resíduo', y = NULL)
+   ```
+
+   Os resíduos deveriam seguir uma distribuição normal. Com apenas $10$ observações, fica difícil avaliar, mas o teste de Shapiro confirma a normalidade:
+   
+   ```{r}
+   shapiro.test(modelo_augment$.resid)
+   ```
+
+   :::
 
 1. Faça um [*scatter plot*]{.hl} de todos os resíduos por valor previsto. [Comente o gráfico]{.hl}.
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   modelo_augment %>% 
+     ggplot(aes(.fitted, .resid)) +
+       geom_point() +
+       geom_hline(yintercept = 0, linetype = 'dashed') +
+       labs(
+         x = 'previsto',
+         y = 'resíduo'
+       )
+   ```
+   
+   De novo, a pequena quantidade de observações atrapalha, mas parece não haver padrões na nuvem de pontos.
+   
+   :::
+
 1. Se houver $18$ vendedores, qual a [receita prevista]{.hl}?
 
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   receita_prevista <- predict(modelo, tibble(vendedores = 18))
+   receita_prevista
+   ```
+   
+   Lembrando que a unidade é milhares de dólares.
+   
+   :::
+
 1. Se, com $18$ vendedores, houver uma receita de R\$ $25.000$, qual o [resíduo]{.hl}?
+
+   ::: {.callout-note collapse="true" title="Resposta"}
+   
+   ```{r}
+   25 - receita_prevista
+   ```
+
+   Lembrando que a unidade é milhares de dólares.
+   
+   :::
+
 
