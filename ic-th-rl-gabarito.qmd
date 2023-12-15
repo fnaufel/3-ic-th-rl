@@ -214,7 +214,7 @@ Uma pesquisa perguntou a $799$ adolescentes se eles mentiam a idade para entrar 
         sucessos, 
         n, 
         p = .5,
-        alternative = 'greater',  
+        alternative = 'two.sided',  
         conf.level = .x, 
         correct = FALSE
       )
